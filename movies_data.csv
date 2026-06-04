@@ -1,0 +1,47 @@
+movie_id,title,release_year,rating,runtime_minutes,genre1,genre2,genre3,watchlist_count,favorites_count,watched_count
+1,The Shawshank Redemption,1994,9.3,142,Drama,Crime,,1900001,2,1
+2,The Godfather,1972,9.2,175,Drama,Crime,,1500000,0,0
+3,The Dark Knight,2008,9.0,152,Drama,Crime,Action,2100000,7,7
+4,The Godfather Part II,1974,9.0,202,Drama,Crime,,1100000,0,0
+5,Pulp Fiction,1994,8.9,154,Drama,Crime,,1800000,0,0
+6,The Lord of the Rings: The Return of the King,2003,8.9,201,Drama,Action,Adventure,1900000,3,3
+7,Inception,2010,8.8,148,Action,Adventure,Sci-Fi,2200001,2,1
+8,The Matrix,1999,8.7,136,Action,Sci-Fi,,2000002,0,1
+9,Parasite,2019,8.6,132,Drama,Thriller,,1600000,0,0
+10,Interstellar,2014,8.6,169,Drama,Adventure,Sci-Fi,1900000,0,0
+11,The Silence of the Lambs,1991,8.6,118,Drama,Crime,Thriller,1500000,0,0
+12,The Green Mile,1999,8.6,189,Drama,Crime,,1700000,0,0
+13,Saving Private Ryan,1998,8.6,169,Drama,War,,1300000,0,0
+14,Good Will Hunting,1997,8.3,126,Drama,,,1200000,0,0
+15,Gladiator,2000,8.5,155,Drama,Action,Adventure,1600000,0,0
+16,The Prestige,2006,8.5,130,Drama,Thriller,Mystery,1500000,0,0
+17,The Departed,2006,8.5,151,Drama,Crime,Thriller,1500000,0,0
+18,The Social Network,2010,7.8,120,Drama,Biography,,900000,0,0
+19,Titanic,1997,7.8,195,Drama,Romance,,1400000,0,0
+20,The Wolf of Wall Street,2013,8.2,180,Crime,Comedy,Biography,1500000,0,0
+21,The Revenant,2015,8.0,156,Drama,Action,Adventure,1300000,0,0
+22,1917,2019,8.2,119,Drama,War,,950000,0,0
+23,Oppenheimer,2023,8.4,180,Drama,Biography,History,1100000,0,0
+24,Joker,2019,8.4,122,Drama,Crime,Thriller,1400000,0,0
+25,Inglourious Basterds,2009,8.3,153,Drama,War,Adventure,1500000,0,0
+26,Django Unchained,2012,8.4,165,Drama,Western,,1500000,0,0
+27,The Truman Show,1998,8.2,103,Drama,Comedy,Sci-Fi,1200000,0,0
+28,Her,2013,8.0,126,Drama,Romance,Sci-Fi,1100000,0,0
+29,The Grand Budapest Hotel,2014,8.1,99,Drama,Comedy,Adventure,1000000,0,0
+30,The Pianist,2002,8.5,150,Drama,Biography,,1000000,0,0
+31,A Beautiful Mind,2001,8.2,135,Drama,Biography,,1100000,0,0
+32,Coco,2017,8.4,105,Adventure,Animation,Family,900000,0,0
+33,Up,2009,8.3,96,Comedy,Adventure,Animation,1300000,0,0
+34,Inside Out,2015,8.1,95,Comedy,Adventure,Animation,1000000,0,0
+35,Spider-Man: Into the Spider-Verse,2018,8.4,117,Action,Adventure,Animation,1100000,0,0
+36,The Lion King,1994,8.5,88,Drama,Adventure,Animation,1600000,0,0
+37,The Intouchables,2011,8.5,112,Drama,Comedy,Biography,1000000,0,0
+38,Shutter Island,2010,8.2,138,Thriller,Mystery,,1500000,0,0
+39,Gone Girl,2014,8.1,149,Drama,Thriller,Mystery,1400000,0,0
+40,Blade Runner 2049,2017,8.0,164,Drama,Action,Mystery,1100000,0,0
+41,The Imitation Game,2014,8.0,114,Drama,Thriller,Biography,1200000,0,0
+42,The Pursuit of Happyness,2006,8.0,117,Drama,Biography,,1100000,0,0
+43,Cast Away,2000,7.8,143,Drama,Romance,Adventure,1300000,0,0
+44,No Country for Old Men,2007,8.2,122,Drama,Crime,Thriller,1500000,0,0
+45,There Will Be Blood,2007,8.2,158,Drama,History,,900000,0,0
+46,The Usual Suspects,1995,8.5,106,Crime,Thriller,Mystery,1200000,0,0

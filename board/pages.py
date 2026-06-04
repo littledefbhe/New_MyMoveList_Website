@@ -100,7 +100,6 @@ def search():
 def movie_detail(movie_id):
     # Get the movie by ID or return 404 if not found
     movie = Movie.query.options(
-        joinedload(Movie.genres),
         joinedload(Movie.stats)
     ).get_or_404(movie_id)
     
