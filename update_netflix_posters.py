@@ -4,7 +4,7 @@ import pandas as pd
 import requests
 import time
 
-# Add the current directory to the Python path
+# Add the current directory to the Python path #
 sys.path.insert(0, os.path.abspath('.'))
 
 from board import create_app, db
