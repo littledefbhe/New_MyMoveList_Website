@@ -16,9 +16,10 @@ TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500"
 # You can get a free API key at https://www.themoviedb.org/settings/api
 TMDB_API_KEY = "8bf1d9bf0f43dcf73c7f196807c387dc"  # Replace with your key
 
-def get_poster_from_tmdb(title, year, media_type="movie"):
+def get_poster_and_rating_from_tmdb(title, year, media_type="movie"):
     """
-    Fetch poster URL from TMDB API.
+    Fetch poster URL and rating from TMDB API.
+    Returns tuple (poster_url, rating) or (None, None) if not found.
     """
     try:
         search_url = f"{TMDB_BASE_URL}/search/{media_type}"
@@ -33,19 +34,25 @@ def get_poster_from_tmdb(title, year, media_type="movie"):
         data = response.json()
         
         if data['results']:
-            poster_path = data['results'][0].get('poster_path')
-            if poster_path:
-                return f"{TMDB_IMAGE_BASE}{poster_path}"
-        return None
+            result = data['results'][0]
+            poster_path = result.get('poster_path')
+            rating = result.get('vote_average')
+            
+            poster_url = f"{TMDB_IMAGE_BASE}{poster_path}" if poster_path else None
+            # Convert TMDB rating (0-10) to IMDB-style (0-10)
+            imdb_rating = float(rating) if rating else None
+            
+            return poster_url, imdb_rating
+        return None, None
     except:
-        return None
+        return None, None
 
 def update_posters():
     """
-    Update poster URLs for all movies from netflix_titles.csv
+    Update poster URLs and ratings for all movies from netflix_titles.csv
     """
     print("=" * 60)
-    print("Netflix Poster Updater")
+    print("Netflix Poster & Rating Updater")
     print("=" * 60)
     
     # Load Netflix data
@@ -73,11 +80,12 @@ def update_posters():
         print(f"✓ Found {len(movies)} movies in database")
         
         # Create a mapping of title -> poster_url from Netflix data
-        print("\n[Step 3] Fetching posters from TMDB...")
+        print("\n[Step 3] Fetching posters and ratings from TMDB...")
         print("This will take some time due to API rate limits...")
         print("-" * 60)
         
-        updated_count = 0
+        updated_posters_count = 0
+        updated_ratings_count = 0
         not_found_count = 0
         
         for idx, netflix_row in netflix_df.iterrows():
@@ -85,10 +93,10 @@ def update_posters():
             year = netflix_row['release_year']
             media_type = "movie" if netflix_row['type'] == "Movie" else "tv"
             
-            # Fetch poster from TMDB
-            poster_url = get_poster_from_tmdb(title, year, media_type)
+            # Fetch poster and rating from TMDB
+            poster_url, rating = get_poster_and_rating_from_tmdb(title, year, media_type)
             
-            if poster_url:
+            if poster_url or rating:
                 # Find matching movie in database
                 matching_movies = Movie.query.filter(
                     Movie.title == title,
@@ -97,10 +105,18 @@ def update_posters():
                 
                 if matching_movies:
                     for movie in matching_movies:
-                        if not movie.poster_url:  # Only update if no poster exists
+                        updated = False
+                        if poster_url and not movie.poster_url:
                             movie.poster_url = poster_url
-                            updated_count += 1
-                            print(f"✓ Updated poster for: {title} ({year})")
+                            updated_posters_count += 1
+                            updated = True
+                        if rating and not movie.rating:
+                            movie.rating = rating
+                            updated_ratings_count += 1
+                            updated = True
+                        
+                        if updated:
+                            print(f"✓ Updated: {title} ({year}) - Poster: {'Yes' if poster_url else 'No'}, Rating: {'Yes' if rating else 'No'}")
                 
                 # Rate limiting (TMDB allows ~40 requests per 10 seconds)
                 if (idx + 1) % 40 == 0:
@@ -108,13 +124,14 @@ def update_posters():
             else:
                 not_found_count += 1
                 if not_found_count <= 10:  # Show first 10 not found
-                    print(f"✗ Poster not found: {title} ({year})")
+                    print(f"✗ Not found in TMDB: {title} ({year})")
         
         # Commit changes
         print("\n[Step 4] Saving to database...")
         db.session.commit()
-        print(f"✓ Updated {updated_count} movie posters")
-        print(f"✗ Could not find posters for {not_found_count} titles")
+        print(f"✓ Updated {updated_posters_count} movie posters")
+        print(f"✓ Updated {updated_ratings_count} movie ratings")
+        print(f"✗ Could not find data for {not_found_count} titles")
         
         print("\n" + "=" * 60)
         print("Update Complete!")
@@ -125,6 +142,6 @@ if __name__ == '__main__':
     print("1. Get free TMDB API key: https://www.themoviedb.org/settings/api")
     print("2. Replace 'YOUR_TMDB_API_KEY_HERE' in this script")
     print("3. Run: python3 update_netflix_posters.py")
-    print("4. Script will automatically fetch and update all posters")
+    print("4. Script will automatically fetch and update all posters and ratings")
     print("\n" + "=" * 60)
     update_posters()
