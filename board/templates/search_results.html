@@ -9,69 +9,225 @@
         <p class="results-count">Found {{ movies|length }} result{% if movies|length != 1 %}s{% endif %}</p>
     </div>
     
-    {% if not movies %}
-        <div class="text-center py-5">
-            <i class="bi bi-search" style="font-size: 3rem; color: var(--text-muted);"></i>
-            <p class="mt-3">No movies found matching "{{ query }}"</p>
-            <a href="{{ url_for('pages.home') }}" class="btn btn-outline-primary mt-2">Back to Home</a>
-        </div>
-    {% else %}
-        <div class="movie-grid">
-            {% for movie in movies %}
-            <div class="movie-card">
-                <a href="{{ url_for('pages.movie_detail', movie_id=movie.id) }}" class="movie-poster-container">
-                    {% if movie.poster_url %}
-                        <img src="{{ movie.poster_url }}" alt="{{ movie.title }}" class="movie-poster">
-                    {% else %}
-                        <div class="no-poster">
-                            <i class="bi bi-film"></i>
-                            <span>No poster available</span>
+    <div class="row">
+        <!-- Filters Sidebar -->
+        <div class="col-md-3 mb-4">
+            <div class="filter-sidebar">
+                <h5 class="filter-title">Filters</h5>
+                
+                <!-- Search Input -->
+                <div class="filter-section">
+                    <form action="{{ url_for('pages.search') }}" method="GET" class="search-form">
+                        <div class="input-group">
+                            <input type="text" name="q" class="form-control" placeholder="Search movies..." value="{{ query }}">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search"></i>
+                            </button>
                         </div>
-                    {% endif %}
-                    <div class="movie-rating">
-                        <i class="bi bi-star-fill"></i>
-                        <span>{{ "%.1f"|format(movie.rating) if movie.rating else 'N/A' }}</span>
-                    </div>
-                </a>
-                <div class="movie-info">
-                    <h3 class="movie-title">{{ movie.title }}</h3>
-                    <div class="movie-meta">
-                        <span class="release-year">{{ movie.release_year }}</span>
-                        {% if movie.certification %}
-                            <span class="certification">{{ movie.certification }}</span>
-                        {% endif %}
-                        {% if movie.runtime_minutes %}
-                            <span class="runtime">{{ movie.runtime_minutes }} min</span>
-                        {% endif %}
-                    </div>
-                    {% if current_user.is_authenticated %}
-                    <div class="movie-actions d-flex gap-2">
-                        <!-- Watchlist Button -->
-                        <button class="btn btn-sm btn-outline-light square-btn"
-                                onclick="toggleWatchlist('{{ movie.id }}'); event.stopPropagation();"
-                                title="{{ 'Remove from watchlist' if movie in current_user.watchlist else 'Add to watchlist' }}">
-                            <i class="bi {{ 'bi-bookmark-check-fill' if movie in current_user.watchlist else 'bi-bookmark-plus' }}"></i>
-                        </button>
-
-                        <!-- Favorites Button -->
-                        <button class="btn btn-sm btn-outline-light square-btn"
-                                onclick="toggleFavorite('{{ movie.id }}'); event.stopPropagation();"
-                                title="{{ 'Remove from favorites' if movie in current_user.favorites else 'Add to favorites' }}">
-                            <i class="bi {{ 'bi-heart-fill' if movie in current_user.favorites else 'bi-heart' }}"></i>
-                        </button>
-
-                        <!-- Watched Button -->
-                        <button class="btn btn-sm btn-outline-light square-btn"
-                                onclick="toggleWatched('{{ movie.id }}'); event.stopPropagation();"
-                                title="{{ 'Mark as not watched' if movie in current_user.watched_movies else 'Mark as watched' }}">
-                            <i class="bi {{ 'bi-eye-fill' if movie in current_user.watched_movies else 'bi-eye' }}"></i>
-                        </button>
-                    </div>
-                    {% endif %}
+                        
+                        <!-- Hidden fields to preserve filters -->
+                        {% for genre_id in selected_genres %}
+                            <input type="hidden" name="genre" value="{{ genre_id }}">
+                        {% endfor %}
+                        {% for type_id in selected_movie_types %}
+                            <input type="hidden" name="movie_type" value="{{ type_id }}">
+                        {% endfor %}
+                    </form>
                 </div>
+                
+                <!-- Genre Filters -->
+                <div class="filter-section">
+                    <h6 class="filter-subtitle">Genres</h6>
+                    <form action="{{ url_for('pages.search') }}" method="GET" class="filter-form">
+                        <input type="hidden" name="q" value="{{ query }}">
+                        {% for type_id in selected_movie_types %}
+                            <input type="hidden" name="movie_type" value="{{ type_id }}">
+                        {% endfor %}
+                        
+                        <div class="genre-filters">
+                            {% for genre in all_genres %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" 
+                                       name="genre" value="{{ genre.id }}" 
+                                       id="genre_{{ genre.id }}"
+                                       {% if genre.id|string in selected_genres %}checked{% endif %}>
+                                <label class="form-check-label" for="genre_{{ genre.id }}">
+                                    {{ genre.name }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <button type="submit" class="btn btn-sm btn-primary w-100 mt-2">Apply Filters</button>
+                    </form>
+                </div>
+                
+                <!-- Movie Type Filters -->
+                <div class="filter-section">
+                    <h6 class="filter-subtitle">Movie Type</h6>
+                    <form action="{{ url_for('pages.search') }}" method="GET" class="filter-form">
+                        <input type="hidden" name="q" value="{{ query }}">
+                        {% for genre_id in selected_genres %}
+                            <input type="hidden" name="genre" value="{{ genre_id }}">
+                        {% endfor %}
+                        
+                        <div class="type-filters">
+                            {% for movie_type in all_movie_types %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" 
+                                       name="movie_type" value="{{ movie_type.id }}" 
+                                       id="type_{{ movie_type.id }}"
+                                       {% if movie_type.id|string in selected_movie_types %}checked{% endif %}>
+                                <label class="form-check-label" for="type_{{ movie_type.id }}">
+                                    {{ movie_type.name }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <button type="submit" class="btn btn-sm btn-primary w-100 mt-2">Apply Filters</button>
+                    </form>
+                </div>
+                
+                <!-- Clear Filters -->
+                {% if selected_genres or selected_movie_types %}
+                <div class="filter-section">
+                    <a href="{{ url_for('pages.search', q=query) }}" class="btn btn-sm btn-outline-danger w-100">
+                        <i class="bi bi-x-circle"></i> Clear Filters
+                    </a>
+                </div>
+                {% endif %}
             </div>
-            {% endfor %}
         </div>
-    {% endif %}
+        
+        <!-- Results Grid -->
+        <div class="col-md-9">
+            {% if not movies %}
+                <div class="text-center py-5">
+                    <i class="bi bi-search" style="font-size: 3rem; color: var(--text-muted);"></i>
+                    <p class="mt-3">No movies found matching "{{ query }}"</p>
+                    <a href="{{ url_for('pages.home') }}" class="btn btn-outline-primary mt-2">Back to Home</a>
+                </div>
+            {% else %}
+                <div class="movie-grid">
+                    {% for movie in movies %}
+                    <div class="movie-card">
+                        <a href="{{ url_for('pages.movie_detail', movie_id=movie.id) }}" class="movie-poster-container">
+                            {% if movie.poster_url %}
+                                <img src="{{ movie.poster_url }}" alt="{{ movie.title }}" class="movie-poster">
+                            {% else %}
+                                <div class="no-poster">
+                                    <i class="bi bi-film"></i>
+                                    <span>No poster available</span>
+                                </div>
+                            {% endif %}
+                            <div class="movie-rating">
+                                <i class="bi bi-star-fill"></i>
+                                <span>{{ "%.1f"|format(movie.rating) if movie.rating else 'N/A' }}</span>
+                            </div>
+                        </a>
+                        <div class="movie-info">
+                            <h3 class="movie-title">{{ movie.title }}</h3>
+                            <div class="movie-meta">
+                                <span class="release-year">{{ movie.release_year }}</span>
+                                {% if movie.certification %}
+                                    <span class="certification">{{ movie.certification }}</span>
+                                {% endif %}
+                                {% if movie.runtime_minutes %}
+                                    <span class="runtime">{{ movie.runtime_minutes }} min</span>
+                                {% endif %}
+                            </div>
+                            {% if current_user.is_authenticated %}
+                            <div class="movie-actions d-flex gap-2">
+                                <!-- Watchlist Button -->
+                                <button class="btn btn-sm btn-outline-light square-btn"
+                                        onclick="toggleWatchlist('{{ movie.id }}'); event.stopPropagation();"
+                                        title="{{ 'Remove from watchlist' if movie in current_user.watchlist else 'Add to watchlist' }}">
+                                    <i class="bi {{ 'bi-bookmark-check-fill' if movie in current_user.watchlist else 'bi-bookmark-plus' }}"></i>
+                                </button>
+
+                                <!-- Favorites Button -->
+                                <button class="btn btn-sm btn-outline-light square-btn"
+                                        onclick="toggleFavorite('{{ movie.id }}'); event.stopPropagation();"
+                                        title="{{ 'Remove from favorites' if movie in current_user.favorites else 'Add to favorites' }}">
+                                    <i class="bi {{ 'bi-heart-fill' if movie in current_user.favorites else 'bi-heart' }}"></i>
+                                </button>
+
+                                <!-- Watched Button -->
+                                <button class="btn btn-sm btn-outline-light square-btn"
+                                        onclick="toggleWatched('{{ movie.id }}'); event.stopPropagation();"
+                                        title="{{ 'Mark as not watched' if movie in current_user.watched_movies else 'Mark as watched' }}">
+                                    <i class="bi {{ 'bi-eye-fill' if movie in current_user.watched_movies else 'bi-eye' }}"></i>
+                                </button>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
+
+<style>
+.filter-sidebar {
+    background: var(--card-bg);
+    border-radius: 8px;
+    padding: 20px;
+    position: sticky;
+    top: 80px;
+}
+
+.filter-title {
+    margin-bottom: 20px;
+    color: var(--text-primary);
+}
+
+.filter-section {
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.filter-section:last-child {
+    border-bottom: none;
+}
+
+.filter-subtitle {
+    margin-bottom: 12px;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.genre-filters,
+.type-filters {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.form-check {
+    margin-bottom: 8px;
+}
+
+.form-check-input {
+    cursor: pointer;
+}
+
+.form-check-label {
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+
+.form-check-input:checked + .form-check-label {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.movie-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+}
+</style>
 {% endblock %}

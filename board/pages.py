@@ -82,54 +82,79 @@ def genre_movies(genre_id):
 def search():
     query = request.args.get('q', '').strip()
     
-    if not query:
-        return redirect(url_for('pages.home'))
+    # Get filter parameters
+    selected_genres = request.args.getlist('genre')
+    selected_movie_types = request.args.getlist('movie_type')
     
-    # Search for movies where the title, description, OR tags contain the search query
-    search_term = f'%{query}%'
-    movies = Movie.query.filter(
-        or_(
-            Movie.title.ilike(search_term),
-            # Handle NULL overview safely
-            db.and_(
-                Movie.overview.isnot(None),
-                Movie.overview.ilike(search_term)
-            ),
-            Movie.id.in_(
-                db.session.query(movie_tags.c.movie_id)
-                .join(Tag, Tag.id == movie_tags.c.tag_id)
-                .filter(Tag.name.ilike(search_term))
+    # Get all available genres and movie types for filters
+    all_genres = Tag.query.filter_by(tag_type='genre').order_by(Tag.name).distinct().all()
+    all_movie_types = Tag.query.filter_by(tag_type='movie_type').order_by(Tag.name).distinct().all()
+    
+    # Build base query
+    movies_query = Movie.query
+    
+    # Apply genre filters
+    if selected_genres:
+        genre_tag_ids = [int(g) for g in selected_genres if g.isdigit()]
+        if genre_tag_ids:
+            movies_query = movies_query.filter(
+                Movie.id.in_(
+                    db.session.query(movie_tags.c.movie_id)
+                    .filter(movie_tags.c.tag_id.in_(genre_tag_ids))
+                )
+            )
+    
+    # Apply movie type filters
+    if selected_movie_types:
+        movie_type_tag_ids = [int(t) for t in selected_movie_types if t.isdigit()]
+        if movie_type_tag_ids:
+            movies_query = movies_query.filter(
+                Movie.id.in_(
+                    db.session.query(movie_tags.c.movie_id)
+                    .filter(movie_tags.c.tag_id.in_(movie_type_tag_ids))
+                )
+            )
+    
+    # Apply search query if provided (only if no filters are applied, or combine with filters)
+    if query:
+        search_term = f'%{query}%'
+        movies_query = movies_query.filter(
+            or_(
+                Movie.title.ilike(search_term),
+                db.and_(
+                    Movie.overview.isnot(None),
+                    Movie.overview.ilike(search_term)
+                ),
+                Movie.id.in_(
+                    db.session.query(movie_tags.c.movie_id)
+                    .join(Tag, Tag.id == movie_tags.c.tag_id)
+                    .filter(Tag.name.ilike(search_term))
+                )
             )
         )
-    ).distinct().order_by(Movie.rating.desc()).all()
     
-    # If exact search returns few results, try fuzzy matching
-    if len(movies) < 5:
-        # Get all movies for fuzzy matching (limit to 500 for performance)
+    # Execute query
+    movies = movies_query.distinct().order_by(Movie.rating.desc()).all()
+    
+    # If exact search returns few results and no filters are applied, try fuzzy matching
+    if query and len(movies) < 5 and not selected_genres and not selected_movie_types:
         all_movies = Movie.query.limit(500).all()
         
-        # Calculate fuzzy match scores for titles
         fuzzy_matches = []
         for movie in all_movies:
-            # Check title similarity
             title_score = fuzz.partial_ratio(query.lower(), movie.title.lower())
-            # Check tag similarity
             tag_score = 0
             for tag in movie.tags:
                 tag_score = max(tag_score, fuzz.partial_ratio(query.lower(), tag.name.lower()))
             
-            # Use the higher score
             best_score = max(title_score, tag_score)
             
-            # Add if similarity is above threshold (70%)
             if best_score >= 70:
                 fuzzy_matches.append((movie, best_score))
         
-        # Sort by similarity score and add to results
         fuzzy_matches.sort(key=lambda x: x[1], reverse=True)
-        fuzzy_movies = [m[0] for m in fuzzy_matches[:20]]  # Top 20 fuzzy matches
+        fuzzy_movies = [m[0] for m in fuzzy_matches[:20]]
         
-        # Combine exact and fuzzy matches, removing duplicates
         existing_ids = {m.id for m in movies}
         for movie in fuzzy_movies:
             if movie.id not in existing_ids:
@@ -140,7 +165,11 @@ def search():
         'search_results.html',
         query=query,
         movies=movies,
-        title=f'Search: {query}'
+        all_genres=all_genres,
+        all_movie_types=all_movie_types,
+        selected_genres=selected_genres,
+        selected_movie_types=selected_movie_types,
+        title=f'Search: {query}' if query else 'Browse Movies'
     )
 
 @bp.route('/movie/<int:movie_id>')
