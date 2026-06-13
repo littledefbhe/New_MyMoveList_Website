@@ -75,6 +75,9 @@
                 <div id="recommendations-container">
                     <p class="text-muted">Save your preferences to see personalized recommendations</p>
                 </div>
+                <button id="show-more-btn" class="btn btn-outline-primary w-100 mt-3" style="display: none;">
+                    <i class="bi bi-chevron-down"></i> Show More
+                </button>
             </div>
         </div>
     </div>
@@ -231,17 +234,32 @@ document.getElementById('preferences-form').addEventListener('submit', async fun
         selectedTags.push(parseInt(checkbox.value));
     });
     
+    console.log('Selected tags:', selectedTags);
+    
     // Send to API
     try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        
         const response = await fetch('/api/preferences', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
             },
             body: JSON.stringify({ tag_ids: selectedTags })
         });
         
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+            const text = await response.text();
+            console.error('Response not OK:', text);
+            alert('Error saving preferences: Server returned ' + response.status);
+            return;
+        }
+        
         const data = await response.json();
+        console.log('Response data:', data);
         
         if (data.success) {
             alert('Preferences saved successfully!');
@@ -250,6 +268,7 @@ document.getElementById('preferences-form').addEventListener('submit', async fun
             alert('Error saving preferences: ' + data.error);
         }
     } catch (error) {
+        console.error('Error:', error);
         alert('Error saving preferences: ' + error.message);
     }
 });
@@ -278,27 +297,26 @@ function displayRecommendations(recommendations) {
     let html = '<div class="recommendation-grid">';
     
     recommendations.forEach(movie => {
-        html += `
-            <div class="recommendation-card">
-                <a href="/movie/${movie.id}">
-                    ${movie.poster_url 
-                        ? `<img src="${movie.poster_url}" alt="${movie.title}" class="recommendation-poster">`
-                        : `<div class="recommendation-poster" style="display: flex; align-items: center; justify-content: center; background: var(--input-bg);">
-                            <i class="bi bi-film" style="font-size: 2rem; color: var(--text-muted);"></i>
-                           </div>`
-                    }
-                </a>
-                <div class="recommendation-info">
-                    <div class="recommendation-title">${movie.title}</div>
-                    <div class="recommendation-meta">
-                        ${movie.release_year} • 
-                        <span class="recommendation-rating">
-                            <i class="bi bi-star-fill"></i> ${movie.rating ? movie.rating.toFixed(1) : 'N/A'}
-                        </span>
-                    </div>
-                </div>
-            </div>
-        `;
+        html += '<div class="recommendation-card">';
+        html += '<a href="/movie/' + movie.id + '">';
+        if (movie.poster_url) {
+            html += '<img src="' + movie.poster_url + '" alt="' + movie.title + '" class="recommendation-poster">';
+        } else {
+            html += '<div class="recommendation-poster" style="display: flex; align-items: center; justify-content: center; background: var(--input-bg);">';
+            html += '<i class="bi bi-film" style="font-size: 2rem; color: var(--text-muted);"></i>';
+            html += '</div>';
+        }
+        html += '</a>';
+        html += '<div class="recommendation-info">';
+        html += '<div class="recommendation-title">' + movie.title + '</div>';
+        html += '<div class="recommendation-meta">';
+        html += movie.release_year + ' • ';
+        html += '<span class="recommendation-rating">';
+        html += '<i class="bi bi-star-fill"></i> ' + (movie.rating ? movie.rating.toFixed(1) : 'N/A');
+        html += '</span>';
+        html += '</div>';
+        html += '</div>';
+        html += '</div>';
     });
     
     html += '</div>';

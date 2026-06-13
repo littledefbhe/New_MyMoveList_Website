@@ -7,9 +7,6 @@ from sklearn.preprocessing import MultiLabelBinarizer
 # Add the current directory to the Python path
 sys.path.insert(0, os.path.abspath('.'))
 
-from board import create_app, db
-from board.models import Movie, Tag, User
-
 class KNNRecommender:
     """
     KNN-based movie recommendation system.
@@ -34,6 +31,9 @@ class KNNRecommender:
     def fit(self):
         """Train the KNN model on existing movie tags."""
         print("Training KNN model on movie tags...")
+        
+        from board import create_app
+        from board.models import Movie, Tag
         
         app = create_app()
         with app.app_context():
@@ -100,6 +100,9 @@ class KNNRecommender:
         Returns:
             List of movie objects recommended for the user
         """
+        from board import create_app
+        from board.models import Movie, User
+        
         app = create_app()
         with app.app_context():
             # Get user's preferred tags
@@ -140,6 +143,9 @@ if __name__ == '__main__':
     recommender.fit()
     
     # Test with some sample preferences (Action, Adventure, Sci-Fi tags)
+    from board import create_app
+    from board.models import Tag, Movie
+    
     app = create_app()
     with app.app_context():
         # Get some tag IDs for testing

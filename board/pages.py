@@ -658,8 +658,9 @@ def update_preferences():
         data = request.get_json()
         tag_ids = data.get('tag_ids', [])
         
-        # Clear existing preferences
-        current_user.preferred_tags = []
+        # Clear existing preferences by removing each one
+        for tag in list(current_user.preferred_tags.all()):
+            current_user.remove_tag_preference(tag)
         
         # Add new preferences
         for tag_id in tag_ids:
@@ -675,6 +676,7 @@ def update_preferences():
         })
     except Exception as e:
         print(f"Error updating preferences: {str(e)}")
+        db.session.rollback()
         return jsonify({
             'success': False,
             'error': 'Failed to update preferences'
@@ -707,14 +709,12 @@ def get_preferences():
 @login_required
 def preferences():
     """Preferences page for users to select their favorite genres and movie types."""
-    app = create_app()
-    with app.app_context():
-        all_genres = Tag.query.filter_by(tag_type='genre').order_by(Tag.name).all()
-        all_movie_types = Tag.query.filter_by(tag_type='movie_type').order_by(Tag.name).all()
-        
-        # Get user's current preferences
-        user_preferences = current_user.preferred_tags.all()
-        selected_tag_ids = {tag.id for tag in user_preferences}
+    all_genres = Tag.query.filter_by(tag_type='genre').order_by(Tag.name).all()
+    all_movie_types = Tag.query.filter_by(tag_type='movie_type').order_by(Tag.name).all()
+    
+    # Get user's current preferences
+    user_preferences = current_user.preferred_tags.all()
+    selected_tag_ids = {tag.id for tag in user_preferences}
     
     return render_template(
         'preferences.html',

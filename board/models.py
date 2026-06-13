@@ -164,7 +164,6 @@ class User(UserMixin, db.Model):
         """Add a tag to the user's preferences if not already present."""
         if tag not in self.preferred_tags.all():
             self.preferred_tags.append(tag)
-            db.session.commit()
             return True
         return False
 
@@ -172,7 +171,6 @@ class User(UserMixin, db.Model):
         """Remove a tag from the user's preferences if present."""
         if tag in self.preferred_tags.all():
             self.preferred_tags.remove(tag)
-            db.session.commit()
             return True
         return False
 
