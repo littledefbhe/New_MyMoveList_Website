@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user, login_user, logout_user
 from urllib.parse import urlparse as url_parse
-from .models import db, User, Movie, Genre, MovieStats, watched, movie_genres
+from .models import db, User, Movie, Genre, MovieStats, Tag, watched, movie_genres, movie_tags
 from .forms import LoginForm, RegistrationForm
 from sqlalchemy import or_
 from sqlalchemy.orm import joinedload
@@ -84,10 +84,19 @@ def search():
     if not query:
         return redirect(url_for('pages.home'))
     
-    # Search for movies where the title contains the search query
+    # Search for movies where the title, description, OR tags contain the search query
+    search_term = f'%{query}%'
     movies = Movie.query.filter(
-        Movie.title.ilike(f'%{query}%')
-    ).order_by(Movie.rating.desc()).all()
+        or_(
+            Movie.title.ilike(search_term),
+            Movie.overview.ilike(search_term),
+            Movie.id.in_(
+                db.session.query(movie_tags.c.movie_id)
+                .join(Tag, Tag.id == movie_tags.c.tag_id)
+                .filter(Tag.name.ilike(search_term))
+            )
+        )
+    ).distinct().order_by(Movie.rating.desc()).all()
     
     return render_template(
         'search_results.html',
