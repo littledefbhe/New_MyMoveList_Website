@@ -617,3 +617,109 @@ def community():
         }
     
     return render_template('community.html', users=users)
+
+@bp.route('/api/recommendations')
+@login_required
+def get_recommendations():
+    """Get personalized movie recommendations for the current user using KNN."""
+    try:
+        import knn_recommender
+        n = request.args.get('n', 10, type=int)
+        recommendations = knn_recommender.get_user_recommendations(current_user.id, n)
+        
+        # Format recommendations for JSON response
+        rec_data = []
+        for movie in recommendations:
+            rec_data.append({
+                'id': movie.id,
+                'title': movie.title,
+                'release_year': movie.release_year,
+                'rating': movie.rating,
+                'poster_url': movie.poster_url,
+                'tags': [tag.name for tag in movie.tags]
+            })
+        
+        return jsonify({
+            'success': True,
+            'recommendations': rec_data
+        })
+    except Exception as e:
+        print(f"Error getting recommendations: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to get recommendations'
+        }), 500
+
+@bp.route('/api/preferences', methods=['POST'])
+@login_required
+def update_preferences():
+    """Update user's tag preferences."""
+    try:
+        data = request.get_json()
+        tag_ids = data.get('tag_ids', [])
+        
+        # Clear existing preferences
+        current_user.preferred_tags = []
+        
+        # Add new preferences
+        for tag_id in tag_ids:
+            tag = Tag.query.get(tag_id)
+            if tag:
+                current_user.add_tag_preference(tag)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Preferences updated successfully'
+        })
+    except Exception as e:
+        print(f"Error updating preferences: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to update preferences'
+        }), 500
+
+@bp.route('/api/preferences', methods=['GET'])
+@login_required
+def get_preferences():
+    """Get user's current tag preferences."""
+    try:
+        preferences = current_user.preferred_tags.all()
+        pref_data = [{
+            'id': tag.id,
+            'name': tag.name,
+            'tag_type': tag.tag_type
+        } for tag in preferences]
+        
+        return jsonify({
+            'success': True,
+            'preferences': pref_data
+        })
+    except Exception as e:
+        print(f"Error getting preferences: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to get preferences'
+        }), 500
+
+@bp.route('/preferences')
+@login_required
+def preferences():
+    """Preferences page for users to select their favorite genres and movie types."""
+    app = create_app()
+    with app.app_context():
+        all_genres = Tag.query.filter_by(tag_type='genre').order_by(Tag.name).all()
+        all_movie_types = Tag.query.filter_by(tag_type='movie_type').order_by(Tag.name).all()
+        
+        # Get user's current preferences
+        user_preferences = current_user.preferred_tags.all()
+        selected_tag_ids = {tag.id for tag in user_preferences}
+    
+    return render_template(
+        'preferences.html',
+        all_genres=all_genres,
+        all_movie_types=all_movie_types,
+        selected_tag_ids=selected_tag_ids,
+        title='My Preferences'
+    )

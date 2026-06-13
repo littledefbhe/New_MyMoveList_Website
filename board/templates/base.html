@@ -69,6 +69,7 @@
                         </button>
                         <div class="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="userDropdown">
                             <a class="dropdown-item" href="{{ url_for('pages.profile') }}"><i class="bi bi-person me-2"></i>Profile</a>
+                            <a class="dropdown-item" href="{{ url_for('pages.preferences') }}"><i class="bi bi-stars me-2"></i>Preferences</a>
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item text-danger" href="{{ url_for('pages.signout') }}"><i class="bi bi-box-arrow-right me-2"></i>Sign Out</a>
                         </div>
@@ -125,6 +126,9 @@
                 <li class="{% if request.endpoint == 'pages.my_library' %}active{% endif %}">
                     <a href="{{ url_for('pages.my_library') }}"><i class="bi bi-collection"></i> My Library</a>
                 </li>
+                <li class="{% if request.endpoint == 'pages.preferences' %}active{% endif %}">
+                    <a href="{{ url_for('pages.preferences') }}"><i class="bi bi-stars"></i> Preferences</a>
+                </li>
                 <li>
                     <a href="{{ url_for('pages.profile') }}"><i class="bi bi-person"></i> Profile</a>
                 </li>
@@ -158,6 +162,9 @@
                     {% if current_user.is_authenticated %}
                     <li class="{% if request.endpoint == 'pages.my_library' %}active{% endif %}">
                         <a href="{{ url_for('pages.my_library') }}">My Library</a>
+                    </li>
+                    <li class="{% if request.endpoint == 'pages.preferences' %}active{% endif %}">
+                        <a href="{{ url_for('pages.preferences') }}">Preferences</a>
                     </li>
                     {% endif %}
                 </ul>
