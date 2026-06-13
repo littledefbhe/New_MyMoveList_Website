@@ -13,6 +13,61 @@
     </div>
     {% endif %}
     
+    {% if current_user.is_authenticated and personalized_movies %}
+    <section class="personalized-section">
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="bi bi-stars"></i> Recommended For You
+            </h2>
+            <p class="section-subtitle">Based on your watchlist, favorites, and watched movies</p>
+        </div>
+        
+        <div class="movie-grid">
+            {% for movie in personalized_movies %}
+            <div class="movie-card">
+                <a href="{{ url_for('pages.movie_detail', movie_id=movie.id) }}" class="movie-poster-container">
+                    <img src="{{ movie.poster_url }}" alt="{{ movie.title }}" class="movie-poster">
+                    <div class="movie-rating">
+                        <i class="bi bi-star-fill"></i>
+                        <span>{{ "%.1f"|format(movie.rating) if movie.rating else 'N/A' }}</span>
+                    </div>
+                </a>
+                <div class="movie-info">
+                    <h3 class="movie-title">{{ movie.title }}</h3>
+                    <div class="movie-meta">
+                        <span class="release-year">{{ movie.release_year }}</span>
+                        <span class="certification">{{ movie.certification }}</span>
+                        <span class="runtime">{{ movie.runtime_minutes }} min</span>
+                    </div>
+                    <div class="movie-actions d-flex gap-2">
+                        <!-- Watchlist Button -->
+                        <button class="btn btn-sm btn-outline-light square-btn"
+                                onclick="toggleWatchlist('{{ movie.id }}'); event.stopPropagation();"
+                                title="{{ 'Remove from watchlist' if movie in current_user.watchlist else 'Add to watchlist' }}">
+                            <i class="bi {{ 'bi-bookmark-check-fill' if movie in current_user.watchlist else 'bi-bookmark-plus' }}"></i>
+                        </button>
+
+                        <!-- Favorites Button -->
+                        <button class="btn btn-sm btn-outline-light square-btn"
+                                onclick="toggleFavorite('{{ movie.id }}'); event.stopPropagation();"
+                                title="{{ 'Remove from favorites' if movie in current_user.favorites else 'Add to favorites' }}">
+                            <i class="bi {{ 'bi-heart-fill' if movie in current_user.favorites else 'bi-heart' }}"></i>
+                        </button>
+
+                        <!-- Watched Button -->
+                        <button class="btn btn-sm btn-outline-light square-btn"
+                                onclick="toggleWatched('{{ movie.id }}'); event.stopPropagation();"
+                                title="{{ 'Mark as not watched' if movie in current_user.watched_movies else 'Mark as watched' }}">
+                            <i class="bi {{ 'bi-eye-fill' if movie in current_user.watched_movies else 'bi-eye' }}"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+    
     {% for genre, movies in movies_by_genre.items() %}
     <section class="genre-section">
         <div class="section-header">

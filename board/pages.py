@@ -23,7 +23,7 @@ def home():
             .all()
         
         if not genres:
-            return render_template("index.html", movies_by_genre={})
+            return render_template("index.html", movies_by_genre={}, personalized_movies=[])
         
         # Get all movie stats in one query
         stats_map = {stat.movie_id: stat for stat in db.session.query(MovieStats).all()}
@@ -55,8 +55,22 @@ def home():
                 
             if movies:
                 movies_by_genre[genre] = movies
+        
+        # Get personalized recommendations if user is authenticated
+        personalized_movies = []
+        if current_user.is_authenticated:
+            try:
+                import knn_recommender
+                personalized_movies = knn_recommender.recommender.get_library_based_recommendations(current_user.id, n=10)
+                
+                # Attach stats to personalized movies
+                for movie in personalized_movies:
+                    movie.stats = stats_map.get(movie.id)
+            except Exception as e:
+                print(f"Error getting personalized recommendations: {str(e)}")
+                personalized_movies = []
     
-    return render_template("index.html", movies_by_genre=movies_by_genre)
+    return render_template("index.html", movies_by_genre=movies_by_genre, personalized_movies=personalized_movies)
 
 @bp.route('/genre/<int:genre_id>')
 def genre_movies(genre_id):
@@ -624,7 +638,7 @@ def get_recommendations():
     """Get personalized movie recommendations for the current user using KNN."""
     try:
         import knn_recommender
-        n = request.args.get('n', 10, type=int)
+        n = request.args.get('n', 20, type=int)
         recommendations = knn_recommender.get_user_recommendations(current_user.id, n)
         
         # Format recommendations for JSON response
