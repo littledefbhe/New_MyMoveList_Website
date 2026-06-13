@@ -64,7 +64,7 @@ class KNNRecommender:
             
             print(f"✓ KNN model trained on {len(movies)} movies with {len(all_tags)} unique tags")
     
-    def get_recommendations(self, user_preferences, n=20):
+    def get_recommendations(self, user_preferences, n=None):
         """
         Get movie recommendations based on user preferences.
         
@@ -74,7 +74,7 @@ class KNNRecommender:
         
         Args:
             user_preferences: List of tag IDs that user prefers
-            n: Number of recommendations to return
+            n: Number of recommendations to return (None for unlimited)
         
         Returns:
             List of movie IDs recommended for the user
@@ -117,11 +117,11 @@ class KNNRecommender:
                 tag_score = matches / len(user_preferences) if user_preferences else 0
                 
                 # 2. Rating score (0-1, normalized to 0-10 scale)
-                rating_score = (movie.rating / 10.0) if movie.rating else 0
+                rating_score = (movie.rating / 10.0) if movie.rating else 0.5  # Default to 0.5 for unrated movies
                 
                 # 3. Popularity score (0-1, based on watched count)
                 stats = stats_map.get(movie.id)
-                popularity_score = 0
+                popularity_score = 0.5  # Default to 0.5 for movies with no stats
                 if stats and stats.watched_count:
                     # Normalize popularity (assuming 1000 watches is max for normalization)
                     popularity_score = min(stats.watched_count / 1000.0, 1.0)
@@ -135,18 +135,21 @@ class KNNRecommender:
             # Sort by combined score (descending)
             movie_scores.sort(key=lambda x: x[1], reverse=True)
             
-            # Return top n movie IDs
-            recommended_movie_ids = [movie_id for movie_id, _, _, _, _ in movie_scores[:n]]
+            # Return all or top n movie IDs
+            if n is None:
+                recommended_movie_ids = [movie_id for movie_id, _, _, _, _ in movie_scores]
+            else:
+                recommended_movie_ids = [movie_id for movie_id, _, _, _, _ in movie_scores[:n]]
             
             return recommended_movie_ids
     
-    def get_user_recommendations(self, user_id, n=20):
+    def get_user_recommendations(self, user_id, n=None):
         """
         Get movie recommendations for a specific user based on their tag preferences.
         
         Args:
             user_id: User ID
-            n: Number of recommendations to return
+            n: Number of recommendations to return (None for unlimited)
         
         Returns:
             List of movie objects recommended for the user
@@ -165,7 +168,10 @@ class KNNRecommender:
             
             if not preferred_tags:
                 # If user has no preferences, return top-rated movies
-                return Movie.query.order_by(Movie.rating.desc()).limit(n).all()
+                if n is None:
+                    return Movie.query.order_by(Movie.rating.desc()).all()
+                else:
+                    return Movie.query.order_by(Movie.rating.desc()).limit(n).all()
             
             # Get recommendations based on preferences
             recommended_movie_ids = self.get_recommendations(preferred_tags, n)
@@ -177,9 +183,12 @@ class KNNRecommender:
             movie_order = {movie_id: idx for idx, movie_id in enumerate(recommended_movie_ids)}
             recommended_movies.sort(key=lambda x: movie_order.get(x.id, float('inf')))
             
-            return recommended_movies[:n]
+            if n is None:
+                return recommended_movies
+            else:
+                return recommended_movies[:n]
     
-    def get_library_based_recommendations(self, user_id, n=20):
+    def get_library_based_recommendations(self, user_id, n=None):
         """
         Get movie recommendations based on user's library (watchlist, favorites, watched movies).
         
@@ -187,7 +196,7 @@ class KNNRecommender:
         
         Args:
             user_id: User ID
-            n: Number of recommendations to return
+            n: Number of recommendations to return (None for unlimited)
         
         Returns:
             List of movie objects recommended for the user
@@ -213,7 +222,10 @@ class KNNRecommender:
             
             if not library_movies:
                 # If user has no library, return top-rated movies
-                return Movie.query.order_by(Movie.rating.desc()).limit(n).all()
+                if n is None:
+                    return Movie.query.order_by(Movie.rating.desc()).all()
+                else:
+                    return Movie.query.order_by(Movie.rating.desc()).limit(n).all()
             
             # Infer preferences from library movies by analyzing their tags
             tag_counts = {}
@@ -224,7 +236,10 @@ class KNNRecommender:
             # Get top tags (most frequent in library)
             if not tag_counts:
                 # If no tags found, return top-rated movies
-                return Movie.query.order_by(Movie.rating.desc()).limit(n).all()
+                if n is None:
+                    return Movie.query.order_by(Movie.rating.desc()).all()
+                else:
+                    return Movie.query.order_by(Movie.rating.desc()).limit(n).all()
             
             # Sort tags by frequency and get top 10
             sorted_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)
@@ -239,8 +254,12 @@ class KNNRecommender:
             
             if not recommended_movie_ids:
                 # If no new recommendations, return top-rated movies not in library
-                return Movie.query.filter(~Movie.id.in_(library_movie_ids))\
-                    .order_by(Movie.rating.desc()).limit(n).all()
+                if n is None:
+                    return Movie.query.filter(~Movie.id.in_(library_movie_ids))\
+                        .order_by(Movie.rating.desc()).all()
+                else:
+                    return Movie.query.filter(~Movie.id.in_(library_movie_ids))\
+                        .order_by(Movie.rating.desc()).limit(n).all()
             
             # Get movie objects
             recommended_movies = Movie.query.filter(Movie.id.in_(recommended_movie_ids)).all()
@@ -249,7 +268,10 @@ class KNNRecommender:
             movie_order = {movie_id: idx for idx, movie_id in enumerate(recommended_movie_ids)}
             recommended_movies.sort(key=lambda x: movie_order.get(x.id, float('inf')))
             
-            return recommended_movies[:n]
+            if n is None:
+                return recommended_movies
+            else:
+                return recommended_movies[:n]
 
 # Global recommender instance
 recommender = KNNRecommender()

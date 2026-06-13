@@ -20,10 +20,13 @@
                 <i class="bi bi-stars"></i> Recommended For You
             </h2>
             <p class="section-subtitle">Based on your watchlist, favorites, and watched movies</p>
+            {% if personalized_movies|length > 5 %}
+            <a href="{{ url_for('pages.all_recommendations') }}" class="view-all">View All</a>
+            {% endif %}
         </div>
         
         <div class="movie-grid">
-            {% for movie in personalized_movies %}
+            {% for movie in personalized_movies[:5] %}
             <div class="movie-card">
                 <a href="{{ url_for('pages.movie_detail', movie_id=movie.id) }}" class="movie-poster-container">
                     <img src="{{ movie.poster_url }}" alt="{{ movie.title }}" class="movie-poster">

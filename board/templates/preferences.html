@@ -275,7 +275,7 @@ document.getElementById('preferences-form').addEventListener('submit', async fun
 
 async function loadRecommendations() {
     try {
-        const response = await fetch('/api/recommendations?n=8');
+        const response = await fetch('/api/recommendations?n=50');
         const data = await response.json();
         
         if (data.success) {

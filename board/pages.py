@@ -11,6 +11,26 @@ from thefuzz import fuzz
 bp = Blueprint("pages", __name__)
 
 # Define routes using the blueprint
+@bp.route('/all-recommendations')
+@login_required
+def all_recommendations():
+    """Page showing all personalized recommendations for the user."""
+    try:
+        import knn_recommender
+        personalized_movies = knn_recommender.recommender.get_library_based_recommendations(current_user.id, n=None)
+        
+        # Get all movie stats
+        stats_map = {stat.movie_id: stat for stat in MovieStats.query.all()}
+        
+        # Attach stats to personalized movies
+        for movie in personalized_movies:
+            movie.stats = stats_map.get(movie.id)
+    except Exception as e:
+        print(f"Error getting personalized recommendations: {str(e)}")
+        personalized_movies = []
+    
+    return render_template("all_recommendations.html", personalized_movies=personalized_movies)
+
 @bp.route("/")
 def home():
     # Use no_autoflush to prevent premature flushes
@@ -61,7 +81,7 @@ def home():
         if current_user.is_authenticated:
             try:
                 import knn_recommender
-                personalized_movies = knn_recommender.recommender.get_library_based_recommendations(current_user.id, n=10)
+                personalized_movies = knn_recommender.recommender.get_library_based_recommendations(current_user.id, n=None)
                 
                 # Attach stats to personalized movies
                 for movie in personalized_movies:
@@ -638,7 +658,7 @@ def get_recommendations():
     """Get personalized movie recommendations for the current user using KNN."""
     try:
         import knn_recommender
-        n = request.args.get('n', 20, type=int)
+        n = request.args.get('n', 50, type=int)
         recommendations = knn_recommender.get_user_recommendations(current_user.id, n)
         
         # Format recommendations for JSON response
