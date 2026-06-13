@@ -71,6 +71,15 @@ def generate_preference_tags():
                     clean_genre = genre.strip()
                     movie_tags_list.append(('genre', clean_genre))
                     tag_stats['genre'].add(clean_genre)
+                    
+                    # Also add individual components for compound genres (e.g., "Action & Adventure" → "Action", "Adventure")
+                    if '&' in clean_genre or 'and' in clean_genre.lower():
+                        # Split compound genres
+                        components = [c.strip() for c in clean_genre.replace('&', 'and').split('and')]
+                        for component in components:
+                            if component:  # Skip empty strings
+                                movie_tags_list.append(('genre', component))
+                                tag_stats['genre'].add(component)
             
             # 2. Add movie type as movie_type tag
             if pd.notna(netflix_row['type']):

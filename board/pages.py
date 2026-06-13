@@ -5,6 +5,7 @@ from .models import db, User, Movie, Genre, MovieStats, Tag, watched, movie_genr
 from .forms import LoginForm, RegistrationForm
 from sqlalchemy import or_
 from sqlalchemy.orm import joinedload
+from thefuzz import fuzz
 
 # Create a blueprint named "pages"
 bp = Blueprint("pages", __name__)
@@ -89,7 +90,11 @@ def search():
     movies = Movie.query.filter(
         or_(
             Movie.title.ilike(search_term),
-            Movie.overview.ilike(search_term),
+            # Handle NULL overview safely
+            db.and_(
+                Movie.overview.isnot(None),
+                Movie.overview.ilike(search_term)
+            ),
             Movie.id.in_(
                 db.session.query(movie_tags.c.movie_id)
                 .join(Tag, Tag.id == movie_tags.c.tag_id)
@@ -97,6 +102,39 @@ def search():
             )
         )
     ).distinct().order_by(Movie.rating.desc()).all()
+    
+    # If exact search returns few results, try fuzzy matching
+    if len(movies) < 5:
+        # Get all movies for fuzzy matching (limit to 500 for performance)
+        all_movies = Movie.query.limit(500).all()
+        
+        # Calculate fuzzy match scores for titles
+        fuzzy_matches = []
+        for movie in all_movies:
+            # Check title similarity
+            title_score = fuzz.partial_ratio(query.lower(), movie.title.lower())
+            # Check tag similarity
+            tag_score = 0
+            for tag in movie.tags:
+                tag_score = max(tag_score, fuzz.partial_ratio(query.lower(), tag.name.lower()))
+            
+            # Use the higher score
+            best_score = max(title_score, tag_score)
+            
+            # Add if similarity is above threshold (70%)
+            if best_score >= 70:
+                fuzzy_matches.append((movie, best_score))
+        
+        # Sort by similarity score and add to results
+        fuzzy_matches.sort(key=lambda x: x[1], reverse=True)
+        fuzzy_movies = [m[0] for m in fuzzy_matches[:20]]  # Top 20 fuzzy matches
+        
+        # Combine exact and fuzzy matches, removing duplicates
+        existing_ids = {m.id for m in movies}
+        for movie in fuzzy_movies:
+            if movie.id not in existing_ids:
+                movies.append(movie)
+                existing_ids.add(movie.id)
     
     return render_template(
         'search_results.html',
