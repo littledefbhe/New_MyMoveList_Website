@@ -77,8 +77,9 @@ def home():
                 movies_by_genre[genre] = movies
         
         # Get personalized recommendations if user is authenticated
+        # Skip KNN on production due to disk space limitations
         personalized_movies = []
-        if current_user.is_authenticated:
+        if current_user.is_authenticated and os.environ.get('FLASK_ENV') != 'production':
             try:
                 import knn_recommender
                 personalized_movies = knn_recommender.recommender.get_library_based_recommendations(current_user.id, n=200)
