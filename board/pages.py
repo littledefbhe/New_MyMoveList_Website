@@ -381,6 +381,8 @@ def edit_review(movie_id, review_id):
             flash('You can only edit your own reviews.', 'danger')
             return redirect(url_for('pages.movie_detail', movie_id=movie_id))
         
+        movie = Movie.query.get_or_404(movie_id)
+        
         rating = request.form.get('rating')
         text = request.form.get('text')
         
