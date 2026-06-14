@@ -46,6 +46,13 @@ def recalculate_all_stats():
                 
                 reviews_count = movie.reviews.count()
                 
+                # Calculate average rating from reviews
+                if reviews_count > 0:
+                    ratings = [review.rating for review in movie.reviews]
+                    average_rating = sum(ratings) / len(ratings)
+                else:
+                    average_rating = 0.0
+                
                 # Get or create stats
                 if not movie.stats:
                     movie.stats = MovieStats(movie_id=movie.id)
@@ -55,15 +62,12 @@ def recalculate_all_stats():
                 movie.stats.favorites_count = favorites_count
                 movie.stats.watched_count = watched_count
                 movie.stats.reviews_count = reviews_count
-                
-                # Keep ratings_count as is (or set to 0 if needed)
-                if movie.stats.ratings_count is None:
-                    movie.stats.ratings_count = 0
+                movie.stats.average_rating = average_rating
                 
                 updated_count += 1
                 
                 if updated_count <= 10:  # Show first 10 updates
-                    print(f"✓ Updated: {movie.title} - Watchlist: {watchlist_count}, Favorites: {favorites_count}, Watched: {watched_count}, Reviews: {reviews_count}")
+                    print(f"✓ Updated: {movie.title} - Watchlist: {watchlist_count}, Favorites: {favorites_count}, Watched: {watched_count}, Reviews: {reviews_count}, Avg Rating: {average_rating:.1f}")
                 
             except Exception as e:
                 print(f"✗ Error updating {movie.title}: {str(e)}")

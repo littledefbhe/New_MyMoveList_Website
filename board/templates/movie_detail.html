@@ -136,8 +136,8 @@
                             {% if movie.stats %}
                             <ul class="list-unstyled text-white-50">
                                 <li class="mb-2">
-                                    <span class="fw-bold text-white">Ratings:</span> 
-                                    {{ "{:,}".format(movie.stats.ratings_count or 0) }}
+                                    <span class="fw-bold text-white">Average Rating:</span> 
+                                    {{ "{:.1f}".format(movie.stats.average_rating or 0) }}/5
                                 </li>
                                 <li class="mb-2">
                                     <span class="fw-bold text-white">Reviews:</span> 

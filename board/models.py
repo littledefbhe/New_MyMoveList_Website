@@ -229,7 +229,7 @@ class MovieStats(db.Model):
     __tablename__ = 'movie_stats'
 
     movie_id = db.Column(db.Integer, db.ForeignKey('movies.id'), primary_key=True)
-    ratings_count = db.Column(db.Integer, default=0)
+    average_rating = db.Column(db.Float, default=0.0)  # Average rating from reviews (0-5)
     reviews_count = db.Column(db.Integer, default=0)
     watchlist_count = db.Column(db.Integer, default=0)
     favorites_count = db.Column(db.Integer, default=0)

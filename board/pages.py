@@ -317,8 +317,11 @@ def add_review(movie_id):
         # Update movie stats
         if movie.stats:
             movie.stats.reviews_count += 1
+            # Recalculate average rating
+            all_ratings = [r.rating for r in movie.reviews]
+            movie.stats.average_rating = sum(all_ratings) / len(all_ratings)
         else:
-            movie.stats = MovieStats(movie_id=movie_id, reviews_count=1)
+            movie.stats = MovieStats(movie_id=movie_id, reviews_count=1, average_rating=rating)
         
         db.session.commit()
         
@@ -349,6 +352,12 @@ def delete_review(movie_id, review_id):
         # Update movie stats
         if movie.stats and movie.stats.reviews_count > 0:
             movie.stats.reviews_count -= 1
+            # Recalculate average rating
+            if movie.reviews.count() > 0:
+                all_ratings = [r.rating for r in movie.reviews]
+                movie.stats.average_rating = sum(all_ratings) / len(all_ratings)
+            else:
+                movie.stats.average_rating = 0.0
         
         db.session.commit()
         
@@ -391,6 +400,11 @@ def edit_review(movie_id, review_id):
         # Update review
         review.rating = rating
         review.text = text
+        
+        # Recalculate average rating
+        if movie.stats:
+            all_ratings = [r.rating for r in movie.reviews]
+            movie.stats.average_rating = sum(all_ratings) / len(all_ratings)
         
         db.session.commit()
         
