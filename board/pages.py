@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user, login_user, logout_user
 from urllib.parse import urlparse as url_parse
-from .models import db, User, Movie, Genre, MovieStats, Tag, watched, movie_genres, movie_tags
+from .models import db, User, Movie, Genre, MovieStats, Tag, Review, watched, movie_genres, movie_tags
 from .forms import LoginForm, RegistrationForm
 from sqlalchemy import or_
 from sqlalchemy.orm import joinedload
@@ -216,6 +216,16 @@ def movie_detail(movie_id):
     # Check if movie is in user's watchlist (only for authenticated users)
     in_watchlist = current_user.is_in_watchlist(movie) if current_user.is_authenticated else False
     
+    # Get reviews for this movie
+    reviews = Review.query.filter_by(movie_id=movie_id)\
+        .order_by(Review.created_at.desc())\
+        .all()
+    
+    # Check if current user has already reviewed this movie
+    user_review = None
+    if current_user.is_authenticated:
+        user_review = Review.query.filter_by(user_id=current_user.id, movie_id=movie_id).first()
+    
     # Get similar movies (movies that share at least one genre, excluding the current movie)
     similar_movies = []
     if movie.genres:
@@ -260,8 +270,137 @@ def movie_detail(movie_id):
         movie=movie,
         similar_movies=similar_movies,
         in_watchlist=in_watchlist,
+        reviews=reviews,
+        user_review=user_review,
         title=f"{movie.title} ({movie.release_year})" if movie.release_year else movie.title
     )
+
+@bp.route('/movie/<int:movie_id>/review', methods=['POST'])
+@login_required
+def add_review(movie_id):
+    """Add a review for a movie."""
+    try:
+        movie = Movie.query.get_or_404(movie_id)
+        
+        # Check if user already reviewed this movie
+        existing_review = Review.query.filter_by(user_id=current_user.id, movie_id=movie_id).first()
+        if existing_review:
+            flash('You have already reviewed this movie. Edit your review instead.', 'warning')
+            return redirect(url_for('pages.movie_detail', movie_id=movie_id))
+        
+        rating = request.form.get('rating')
+        text = request.form.get('text')
+        
+        if not rating or not text:
+            flash('Rating and review text are required.', 'danger')
+            return redirect(url_for('pages.movie_detail', movie_id=movie_id))
+        
+        try:
+            rating = float(rating)
+            if rating < 0.5 or rating > 5.0:
+                flash('Rating must be between 0.5 and 5.0.', 'danger')
+                return redirect(url_for('pages.movie_detail', movie_id=movie_id))
+        except ValueError:
+            flash('Invalid rating.', 'danger')
+            return redirect(url_for('pages.movie_detail', movie_id=movie_id))
+        
+        # Create new review
+        review = Review(
+            user_id=current_user.id,
+            movie_id=movie_id,
+            rating=rating,
+            text=text
+        )
+        
+        db.session.add(review)
+        
+        # Update movie stats
+        if movie.stats:
+            movie.stats.reviews_count += 1
+        else:
+            movie.stats = MovieStats(movie_id=movie_id, reviews_count=1)
+        
+        db.session.commit()
+        
+        flash('Review added successfully!', 'success')
+        return redirect(url_for('pages.movie_detail', movie_id=movie_id))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error adding review: {str(e)}', 'danger')
+        return redirect(url_for('pages.movie_detail', movie_id=movie_id))
+
+@bp.route('/movie/<int:movie_id>/review/<int:review_id>/delete', methods=['POST'])
+@login_required
+def delete_review(movie_id, review_id):
+    """Delete a review."""
+    try:
+        review = Review.query.get_or_404(review_id)
+        
+        # Check if user owns this review
+        if review.user_id != current_user.id:
+            flash('You can only delete your own reviews.', 'danger')
+            return redirect(url_for('pages.movie_detail', movie_id=movie_id))
+        
+        movie = Movie.query.get_or_404(movie_id)
+        
+        db.session.delete(review)
+        
+        # Update movie stats
+        if movie.stats and movie.stats.reviews_count > 0:
+            movie.stats.reviews_count -= 1
+        
+        db.session.commit()
+        
+        flash('Review deleted successfully!', 'success')
+        return redirect(url_for('pages.movie_detail', movie_id=movie_id))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting review: {str(e)}', 'danger')
+        return redirect(url_for('pages.movie_detail', movie_id=movie_id))
+
+@bp.route('/movie/<int:movie_id>/review/<int:review_id>/edit', methods=['POST'])
+@login_required
+def edit_review(movie_id, review_id):
+    """Edit a review."""
+    try:
+        review = Review.query.get_or_404(review_id)
+        
+        # Check if user owns this review
+        if review.user_id != current_user.id:
+            flash('You can only edit your own reviews.', 'danger')
+            return redirect(url_for('pages.movie_detail', movie_id=movie_id))
+        
+        rating = request.form.get('rating')
+        text = request.form.get('text')
+        
+        if not rating or not text:
+            flash('Rating and review text are required.', 'danger')
+            return redirect(url_for('pages.movie_detail', movie_id=movie_id))
+        
+        try:
+            rating = float(rating)
+            if rating < 0.5 or rating > 5.0:
+                flash('Rating must be between 0.5 and 5.0.', 'danger')
+                return redirect(url_for('pages.movie_detail', movie_id=movie_id))
+        except ValueError:
+            flash('Invalid rating.', 'danger')
+            return redirect(url_for('pages.movie_detail', movie_id=movie_id))
+        
+        # Update review
+        review.rating = rating
+        review.text = text
+        
+        db.session.commit()
+        
+        flash('Review updated successfully!', 'success')
+        return redirect(url_for('pages.movie_detail', movie_id=movie_id))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating review: {str(e)}', 'danger')
+        return redirect(url_for('pages.movie_detail', movie_id=movie_id))
 
 @bp.route('/signin', methods=['GET', 'POST'])
 def signin():

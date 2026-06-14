@@ -237,3 +237,21 @@ class MovieStats(db.Model):
     
     def __repr__(self):
         return f'<MovieStats for movie {self.movie_id}>'
+
+class Review(db.Model):
+    __tablename__ = 'reviews'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    movie_id = db.Column(db.Integer, db.ForeignKey('movies.id'), nullable=False)
+    rating = db.Column(db.Float, nullable=False)  # 0.5-5.0 stars (half-star increments)
+    text = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('User', backref=db.backref('reviews', lazy='dynamic', cascade='all, delete-orphan'))
+    movie = db.relationship('Movie', backref=db.backref('reviews', lazy='dynamic', cascade='all, delete-orphan'))
+    
+    def __repr__(self):
+        return f'<Review by {self.user.username} for {self.movie.title}>'
