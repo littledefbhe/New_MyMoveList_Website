@@ -17,7 +17,7 @@ def all_recommendations():
     """Page showing all personalized recommendations for the user."""
     try:
         import knn_recommender
-        personalized_movies = knn_recommender.recommender.get_library_based_recommendations(current_user.id, n=None)
+        personalized_movies = knn_recommender.recommender.get_library_based_recommendations(current_user.id, n=200)
         
         # Get all movie stats
         stats_map = {stat.movie_id: stat for stat in MovieStats.query.all()}
@@ -81,7 +81,7 @@ def home():
         if current_user.is_authenticated:
             try:
                 import knn_recommender
-                personalized_movies = knn_recommender.recommender.get_library_based_recommendations(current_user.id, n=None)
+                personalized_movies = knn_recommender.recommender.get_library_based_recommendations(current_user.id, n=200)
                 
                 # Attach stats to personalized movies
                 for movie in personalized_movies:
