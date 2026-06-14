@@ -14,7 +14,7 @@ from board.models import Movie
 TMDB_BASE_URL = "https://api.themoviedb.org/3"
 TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500"
 # You can get a free API key at https://www.themoviedb.org/settings/api
-TMDB_API_KEY = "8bf1d9bf0f43dcf73c7f196807c387dc"  # Replace with your key
+TMDB_API_KEY = os.environ.get('TMDB_API_KEY')
 
 def get_poster_and_rating_from_tmdb(title, year, media_type="movie"):
     """
@@ -65,9 +65,10 @@ def update_posters():
         return
     
     # Check API key
-    if TMDB_API_KEY == "YOUR_TMDB_API_KEY_HERE":
-        print("\n✗ Please set your TMDB API key in this script")
+    if not TMDB_API_KEY:
+        print("\n✗ Please set TMDB_API_KEY environment variable")
         print("  Get free key at: https://www.themoviedb.org/settings/api")
+        print("  Set it with: export TMDB_API_KEY='your-key-here'")
         return
     
     # Initialize Flask app
@@ -140,7 +141,7 @@ def update_posters():
 if __name__ == '__main__':
     print("\n📝 INSTRUCTIONS:")
     print("1. Get free TMDB API key: https://www.themoviedb.org/settings/api")
-    print("2. Replace 'YOUR_TMDB_API_KEY_HERE' in this script")
+    print("2. Set environment variable: export TMDB_API_KEY='your-key-here'")
     print("3. Run: python3 update_netflix_posters.py")
     print("4. Script will automatically fetch and update all posters and ratings")
     print("\n" + "=" * 60)
