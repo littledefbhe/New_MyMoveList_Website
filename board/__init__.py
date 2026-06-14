@@ -3,7 +3,6 @@ from datetime import datetime
 from flask import Flask, session
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect, generate_csrf
-from flask_talisman import Talisman
 from .models import db, User
 from board import pages  # Import the pages blueprint
 
@@ -22,18 +21,9 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'instance/movielist.db')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    # Security configuration
-    app.config['SESSION_COOKIE_SECURE'] = True
-    app.config['SESSION_COOKIE_HTTPONLY'] = True
-    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-    app.config['PREFERRED_URL_SCHEME'] = 'https'
-    
     # Initialize extensions
     db.init_app(app)
     csrf = CSRFProtect(app)
-
-    # Security headers with Flask-Talisman
-    Talisman(app, force_https=False, strict_transport_security=False)
     
     # Initialize Flask-Login
     login_manager = LoginManager()
