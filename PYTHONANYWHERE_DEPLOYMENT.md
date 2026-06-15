@@ -65,7 +65,7 @@ if project_home not in sys.path:
 os.chdir(project_home)
 
 # Set environment variables before importing
-os.environ['SECRET_KEY'] = '66f2f67ff89f14a5e577345ba5a0f5b3d8eecf70b43dd41cda407cd651772da1'
+os.environ['SECRET_KEY'] = 'f0502786488ccea11030ff6c339d5c2d5be1934fa4bc8bd99a5e8f37d0e8c55e'
 os.environ['TMDB_API_KEY'] = 'your-tmdb-api-key-here'
 os.environ['FLASK_ENV'] = 'production'
 
